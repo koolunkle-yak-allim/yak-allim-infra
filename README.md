@@ -7,6 +7,7 @@
 ---
 
 ## 서비스 구성
+
 * **Nginx (Reverse Proxy)**: `http://localhost`
   * Dynamic Container DNS Resolution 및 블루-그린 무중단 스위칭 지원 (`service-url.inc`)
 * **Jenkins (CI/CD Controller)**: `http://localhost:9090`
@@ -24,22 +25,26 @@
 ## 구동 방법
 
 ### 1. 환경 변수 설정
+
 ```bash
 cp .env.example .env
 ```
 
 ### 2. 초기 네트워크 및 볼륨 설정
+
 ```bash
 chmod +x scripts/init-volumes.sh
 ./scripts/init-volumes.sh
 ```
 
 ### 3. 인프라 서비스 실행
+
 ```bash
 docker compose up -d
 ```
 
 ### 4. 인프라 상태 확인
+
 ```bash
 docker compose ps
 ```
