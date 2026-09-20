@@ -8,7 +8,7 @@ services:
     restart: always
     ports:
       - "80:80"
-      - "443:443"
+      # - "443:443"  # TLS 설정 전까지는 열지 않음
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d
@@ -46,8 +46,8 @@ services:
     user: root
     restart: always
     ports:
-      - "9090:8080"
-      - "50000:50000"
+      - "127.0.0.1:9090:8080"
+      # - "50000:50000"  # JNLP 에이전트 연결을 쓰지 않아 제거 (Dynamic Docker Agent는 내부 네트워크로 연결됨)
     environment:
       - TZ=Asia/Seoul
     volumes:
