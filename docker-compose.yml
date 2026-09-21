@@ -3,7 +3,7 @@ name: yak-allim-infra
 services:
   # Nginx 리버스 프록시 및 무중단(블루-그린) 라우팅 컨트롤러
   nginx:
-    image: nginx:alpine
+    image: nginx:stable-alpine
     container_name: yak-allim-nginx
     restart: always
     ports:
@@ -16,12 +16,20 @@ services:
     networks:
       - app-network
     depends_on:
-      - jenkins
-      - n8n
+      jenkins:
+        condition: service_healthy
+      n8n:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   # OCR 분석 및 작업 자동화 엔진
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:stable
     container_name: yak-allim-n8n
     restart: always
     ports:
@@ -35,13 +43,19 @@ services:
       - "${N8N_DATA_PATH:-C:/n8n_data}:/home/node/.n8n"
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # 통합 CI/CD 빌드 및 배포 제어기 (Jenkins Controller with Docker CLI)
   jenkins:
     build:
       context: .
       dockerfile: jenkins.Dockerfile
-    image: yak-allim-jenkins-custom:lts
+    image: yak-allim-jenkins-custom:2.568.3-lts-jdk21
     container_name: yak-allim-jenkins
     user: root
     restart: always
@@ -56,6 +70,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
 # 서비스 및 백엔드/클라이언트 배포 공용 네트워크
 networks:
