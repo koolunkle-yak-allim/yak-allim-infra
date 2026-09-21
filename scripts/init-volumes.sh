@@ -22,6 +22,7 @@ fi
 if [ ! -f "nginx/conf.d/service-url.inc" ]; then
     echo "Creating default nginx/conf.d/service-url.inc..."
     mkdir -p nginx/conf.d
+    # shellcheck disable=SC2016 # nginx 변수 문법이라 셸에서 확장되면 안 됨(의도된 작은따옴표)
     echo 'set $service_url http://yak-allim-backend-blue:8081;' > nginx/conf.d/service-url.inc
 fi
 
