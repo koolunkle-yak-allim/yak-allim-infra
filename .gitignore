@@ -7,6 +7,9 @@
 n8n_data/
 jenkins_home/
 
+# 배포 스크립트가 블루-그린 전환마다 덮어쓰는 파일. init-volumes.sh가 없으면 기본값으로 생성한다.
+nginx/conf.d/service-url.inc
+
 # OS specific files
 .DS_Store
 Thumbs.db

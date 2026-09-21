@@ -22,6 +22,8 @@
    `set $service_url http://yak-allim-backend-blue:8081;`
 3. Jenkins가 `docker exec yak-allim-nginx nginx -s reload` 명령을 실행하여 다운타임 없이 Nginx 라우팅 전환 완료.
 
+> `nginx/conf.d/service-url.inc`는 배포마다 덮어써지는 런타임 상태 파일이라 git에서 추적하지 않습니다(`.gitignore` 참고). `scripts/init-volumes.sh`가 최초 실행 시 `nginx/conf.d/service-url.inc.example`과 동일한 내용으로 생성합니다.
+
 ## 구동 방법
 
 ### 1. 환경 변수 설정
