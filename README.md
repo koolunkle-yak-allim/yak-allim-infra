@@ -82,6 +82,35 @@ docker compose up -d
 docker compose ps
 ```
 
+## n8n 워크플로우
+
+`n8n/workflows/ocr.json`은 처방전 이미지 OCR → 약품 정보 구조화 → 서버 콜백까지 이어지는 n8n 워크플로우를 export한 것입니다(`ocr.type=n8n` 모드에서 사용). 자격 증명 값과 개인 리소스 ID는 제거되어 있으니, import 후 아래 항목을 직접 채워야 합니다.
+
+### Import 방법
+
+1. n8n 관리 화면(`http://localhost:5678`) 접속 후 **Workflows → Import from File**로 `n8n/workflows/ocr.json` 업로드.
+2. 아래 자격 증명을 n8n의 Credentials 메뉴에서 새로 만들고 각 노드에 연결합니다.
+
+   | 노드 | 필요한 자격 증명 | 비고 |
+   | --- | --- | --- |
+   | `Webhook` | Header Auth | 서버 → n8n 요청의 인바운드 인증. 값은 서버가 보내는 `X-N8N-WEBHOOK-SECRET` 헤더와 맞춰야 합니다 |
+   | `Upstage OCR` | Bearer Auth | [Upstage Document AI](https://upstage.ai) API 키 |
+   | `Google Gemini Chat Model` | Google Gemini(PaLM) API | Gemini API 키 |
+   | `Append row in sheet` (비활성) | Google Sheets OAuth2 | 현재 비활성화 상태라 필수는 아닙니다. 사용하려면 본인 스프레드시트로 `documentId`/`sheetName`을 다시 지정해야 합니다 |
+
+3. `Spring Boot` 노드(서버 콜백)의 `X-N8N-Secret` 헤더 값을 실제 비밀값으로 교체하고, 서버 쪽 `OCR_N8N_WEBHOOK_SECRET` 환경 변수와 동일한 값으로 맞춥니다. **`REPLACE_WITH_...`로 표시된 값이나 추측 가능한 문자열을 그대로 쓰지 마세요.**
+4. `Webhook` 노드를 Production 모드로 활성화하면 `http://<n8n-host>:5678/webhook/ocr`로 요청을 받습니다. 이 URL을 서버의 `ocr.n8n.webhook-url`에 설정하세요.
+
+### 워크플로우 개요
+
+1. `Webhook` — 서버가 처방전 이미지를 멀티파트로 전송
+2. `Upstage OCR` — 이미지에서 텍스트와 좌표를 추출
+3. `Code in JavaScript` — OCR 응답을 LLM 입력 형식으로 가공, 쿼리스트링의 `jobId` 추출
+4. `Basic LLM Chain`(Google Gemini) — 약품명·복용량·복용 횟수·기간·좌표를 구조화된 JSON으로 추출
+5. `Spring Boot` — 결과를 서버 콜백(`POST /api/v1/ocr/n8n/callback/{jobId}`)으로 전송
+
+`On form submission`/`Edit Fields`/`Split Out`/`Append row in sheet` 노드는 초기 개발 단계에서 쓰던 흐름(수동 폼 업로드 + Google Sheets 기록)의 흔적으로, 현재는 비활성화되어 있습니다.
+
 ## 롤백 방법
 
 배포가 잘못됐다면 `yak-allim-server` 저장소의 롤백 스크립트로 이전 빌드 이미지로 되돌립니다(재빌드 없이 블루-그린 전환만 다시 수행).
