@@ -1,4 +1,4 @@
-FROM jenkins/jenkins:lts
+FROM jenkins/jenkins:2.568.3-lts-jdk21
 USER root
 
 # Docker CLI 설치 (Docker-outside-of-Docker 지원)
