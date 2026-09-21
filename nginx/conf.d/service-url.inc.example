@@ -1,0 +1,4 @@
+# Default routing variable for Blue/Green Deployment
+# 실제 service-url.inc는 배포마다 블루-그린 전환 스크립트가 덮어쓰므로 git에서 추적하지 않는다.
+# scripts/init-volumes.sh가 최초 실행 시 이 파일과 같은 내용으로 nginx/conf.d/service-url.inc를 생성한다.
+set $service_url http://yak-allim-backend-blue:8081;
