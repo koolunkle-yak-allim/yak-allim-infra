@@ -294,7 +294,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=http://yak-allim-nginx/api/v1/ocr/n8n/callback/{{ $('Webhook').first().json.query.jobId }}",
+        "url": "=http://yak-allim-nginx/api/v1/ocr/n8n/callback/{{ $('Code in JavaScript').first().json.jobId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -306,7 +306,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"jobId\": \"{{ $('Webhook').first().json.query.jobId }}\", \n  \"status\": \"SUCCESS\",\n  \"data\": {\n    \"prescriptions\": {{ JSON.stringify($json.output.prescriptions) }}\n  }\n}",
+        "jsonBody": "={\n  \"jobId\": \"{{ $('Code in JavaScript').first().json.jobId }}\", \n  \"status\": \"SUCCESS\",\n  \"data\": {\n    \"medicines\": {{ JSON.stringify($json.output.prescriptions) }}\n  }\n}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",
