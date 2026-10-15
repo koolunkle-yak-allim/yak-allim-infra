@@ -84,7 +84,7 @@ docker compose ps
 
 ## n8n 워크플로우
 
-`n8n/workflows/ocr.json`은 처방전 이미지 OCR → 약품 정보 구조화 → 서버 콜백까지 이어지는 n8n 워크플로우를 export한 것입니다(`ocr.type=n8n` 모드에서 사용). 자격 증명 값과 개인 리소스 ID는 제거되어 있으니, import 후 아래 항목을 직접 채워야 합니다.
+`n8n/workflows/ocr.json`은 처방전 이미지 OCR → 약품 정보 구조화 → 서버 콜백까지 이어지는 n8n 워크플로우를 export한 것입니다. 자격 증명 값과 개인 리소스 ID는 제거되어 있으니, import 후 아래 항목을 직접 채워야 합니다.
 
 ### Import 방법
 
@@ -106,8 +106,10 @@ docker compose ps
 1. `Webhook` — 서버가 처방전 이미지를 멀티파트로 전송
 2. `Upstage OCR` — 이미지에서 텍스트와 좌표를 추출
 3. `Code in JavaScript` — OCR 응답을 LLM 입력 형식으로 가공, 쿼리스트링의 `jobId` 추출
-4. `Basic LLM Chain`(Google Gemini) — 약품명·복용량·복용 횟수·기간·좌표를 구조화된 JSON으로 추출
+4. `Basic LLM Chain`(Google Gemini) — 약품명·복용량·복용 횟수·기간을 구조화된 JSON으로 추출
 5. `Spring Boot` — 결과를 서버 콜백(`POST /api/v1/ocr/n8n/callback/{jobId}`)으로 전송
+
+서버와의 콜백 설정, 실패 콜백·결과 검증 추가 방법은 [`n8n/README.md`](n8n/README.md)에 정리되어 있습니다.
 
 `On form submission`/`Edit Fields`/`Split Out`/`Append row in sheet` 노드는 초기 개발 단계에서 쓰던 흐름(수동 폼 업로드 + Google Sheets 기록)의 흔적으로, 현재는 비활성화되어 있습니다.
 
