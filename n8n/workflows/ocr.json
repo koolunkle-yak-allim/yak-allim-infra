@@ -78,7 +78,10 @@
       ],
       "id": "692a433e-fe5d-4a11-b6ba-11adbec20a49",
       "name": "Basic LLM Chain",
-      "onError": "continueErrorOutput"
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
     },
     {
       "parameters": {
