@@ -8,15 +8,19 @@
 ## 현재 흐름
 
 ```
-Webhook → Upstage OCR → Code in JavaScript → Basic LLM Chain(Gemini) → Spring Boot(콜백)
+Webhook → Upstage OCR ─→ Code in JavaScript ─→ Basic LLM Chain ─→ 약품 추출 확인 ─true─→ Spring Boot
+               │error            │error                │error            │false
+               └─────────────────┴─────────────────────┴─────────────────┴──────────→ Spring Boot (실패)
 ```
 
 - `Webhook`: 서버가 `?jobId={jobId}` 쿼리와 `multipart/form-data`의 `file` 필드로 이미지를 보냅니다.
 - `Code in JavaScript`: OCR 응답을 LLM 입력으로 가공하고 `jobId`를 꺼냅니다.
+- `약품 추출 확인`(IF): 약품이 하나 이상 추출됐는지 확인합니다.
 - `Spring Boot`: 결과를 `POST http://yak-allim-nginx/api/v1/ocr/n8n/callback/{jobId}`로 보냅니다.
+- `Spring Boot (실패)`: 중간 노드가 실패하거나 약품을 찾지 못하면 같은 주소로 `status: "FAILED"`를 보냅니다.
 
-지금은 성공 경로만 있어, 중간 노드가 실패하면 서버에 아무것도 알리지 못합니다. 이때 서버는
-처리 시간 초과(기본 15분) 후에야 작업을 실패로 처리합니다. 아래 설정으로 실패를 바로 알리도록 합니다.
+실패 콜백이 없으면 서버는 처리 시간 초과(기본 15분) 후에야 작업을 실패로 처리합니다.
+아래는 각 노드의 설정과 그렇게 한 이유입니다.
 
 ## 1. Webhook 노드
 
@@ -43,25 +47,18 @@ n8n이 멈추거나 재시작되는 등 콜백 자체를 보내지 못하는 경
 `Upstage OCR`, `Code in JavaScript`, `Basic LLM Chain` 각각에서:
 
 - **Settings → On Error**를 `Continue (using error output)`로 설정합니다.
-- 노드에 error 출력이 하나 더 생깁니다. 이 출력을 4번의 **실패 콜백** 노드에 연결합니다.
-  세 노드의 에러 출력을 실패 콜백 노드 하나로 모으면 됩니다.
+- 노드에 error 출력이 하나 더 생깁니다. 세 노드의 에러 출력을 모두 4번의 `Spring Boot (실패)` 노드로 모읍니다.
 
-### LLM 결과 검증
+### LLM 결과 검증 (`약품 추출 확인` 노드)
 
-LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. `Basic LLM Chain`과 `Spring Boot` 사이에
+LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. 그래서 `Basic LLM Chain`과 `Spring Boot` 사이에
 **IF 노드**를 두고, 약품이 하나도 추출되지 않았으면 실패 콜백으로 보냅니다.
 
 - 조건(Number): `{{ ($json.output?.prescriptions ?? []).length }}` **is greater than** `0`
-- true → `Spring Boot`, false → 실패 콜백
+- true → `Spring Boot`, false → `Spring Boot (실패)`
 
 서버는 빈 목록을 "약이 0개인 성공"으로 처리합니다. 실패로 보내야 사용자에게
 "사진을 다시 찍어 올려 주세요"라는 안내가 나갑니다.
-
-```
-Webhook → Upstage OCR ─→ Code in JavaScript ─→ Basic LLM Chain ─→ IF(약품 1개 이상?) ─true─→ Spring Boot
-               │error            │error                │error              │false
-               └─────────────────┴─────────────────────┴───────────────────┴──────────→ 실패 콜백
-```
 
 ## 3. 성공 콜백 (`Spring Boot` 노드)
 
@@ -72,9 +69,9 @@ Webhook → Upstage OCR ─→ Code in JavaScript ─→ Basic LLM Chain ─→ 
   그래도 `Structured Output Parser` 스키마에서 `bounds`를 빼면 LLM 응답이 짧아지고, 정확하지 않은 좌표를 만들어 내는 일도 없어집니다.
 - **Settings → Retry On Fail**을 켭니다(Max Tries 3, Wait 5000ms). 서버가 블루-그린 전환 중이라 잠시 응답하지 못할 때를 대비합니다.
 
-## 4. 실패 콜백 노드 (HTTP Request, 새로 추가)
+## 4. 실패 콜백 (`Spring Boot (실패)` 노드)
 
-`Spring Boot` 노드를 복제해서 아래만 바꾸면 됩니다.
+`Spring Boot` 노드를 복제한 HTTP Request 노드이며, 아래만 다릅니다.
 
 - **URL**:
   ```
@@ -87,11 +84,16 @@ Webhook → Upstage OCR ─→ Code in JavaScript ─→ Basic LLM Chain ─→ 
   {{ JSON.stringify({
     jobId: $('Webhook').first().json.query.jobId,
     status: "FAILED",
-    error: String($json.error?.message ?? $json.error ?? "약품 정보를 추출하지 못함").slice(0, 500)
+    error: String(
+      typeof $json.error === 'string'
+        ? $json.error
+        : ($json.error?.message ?? (($json.error && JSON.stringify($json.error)) || '약품 정보를 추출하지 못함'))
+    ).slice(0, 500)
   }) }}
   ```
-  - 문자열을 직접 이어 붙이지 말고 `JSON.stringify`를 쓰세요. 에러 메시지에 따옴표나 줄바꿈이 있어도 JSON이 깨지지 않습니다.
-  - 에러 출력에 담기는 정보의 형태는 노드마다 조금 다릅니다. 실행 화면에서 에러 항목을 열어 보고 `error` 경로를 맞추세요.
+  - 문자열을 직접 이어 붙이지 않고 `JSON.stringify`를 씁니다. 에러 메시지에 따옴표나 줄바꿈이 있어도 JSON이 깨지지 않습니다.
+  - 에러 출력의 `error`는 노드에 따라 문자열이기도 하고 `message`를 가진 객체이기도 해서 둘 다 처리합니다.
+    `약품 추출 확인`의 false 경로처럼 `error`가 없으면 기본 문구를 보냅니다.
   - `error`는 서버 로그에만 남고 사용자에게는 보이지 않습니다. 그래도 OCR 원문 같은 처방 내용은 넣지 마세요.
 - **Settings**
   - **Retry On Fail**: 켜기(Max Tries 3, Wait 5000ms)
@@ -121,8 +123,8 @@ Webhook → Upstage OCR ─→ Code in JavaScript ─→ Basic LLM Chain ─→ 
    - 이어서 `GET /api/v1/ocr/jobs/<jobId>`의 `status`가 `FAILED`인지 확인합니다.
    - 서버 로그에 `n8n reported analysis failure`가 찍히는지도 확인합니다.
 2. **n8n 연동 확인**: `Upstage OCR` 자격 증명을 일부러 틀리게 바꾸고 실제 사진을 올립니다.
-   n8n 실행 화면에서 실패 콜백 노드가 `200`을 받았는지 확인합니다.
-3. **빈 결과 확인**: 약 정보가 없는 사진을 올려 IF 노드가 실패 경로로 가는지 확인합니다.
+   n8n 실행 화면에서 `Spring Boot (실패)` 노드가 `200`을 받았는지 확인합니다.
+3. **빈 결과 확인**: 약 정보가 없는 사진을 올려 `약품 추출 확인` 노드가 실패 경로로 가는지 확인합니다.
 4. **주의**: `webhook-test` 주소는 n8n 편집기에서 "Listen for test event"를 누른 동안에만 동작합니다.
    최종 확인은 워크플로우를 Active로 켠 상태에서 production 주소(`/webhook/ocr`)로 하세요.
 
