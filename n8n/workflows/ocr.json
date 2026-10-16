@@ -399,7 +399,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  jobId: $('Webhook').first().json.query.jobId,\n  status: \"FAILED\",\n  error: String(\n    typeof $json.error === 'string'\n      ? $json.error\n      : ($json.error?.message ?? (($json.error && JSON.stringify($json.error)) || '약품 정보를 추출하지 못함'))\n  ).slice(0, 500)\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  jobId: $('Webhook').first().json.query.jobId,\n  status: \"FAILED\",\n  error: String(\n    typeof $json.error === 'string'\n      ? $json.error\n      : ($json.error && ($json.error.message || JSON.stringify($json.error))) || '약품 정보를 추출하지 못함'\n  ).slice(0, 500)\n}) }}",
         "options": {}
       },
       "type": "n8n-nodes-base.httpRequest",

@@ -87,13 +87,14 @@ LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. 
     error: String(
       typeof $json.error === 'string'
         ? $json.error
-        : ($json.error?.message ?? (($json.error && JSON.stringify($json.error)) || '약품 정보를 추출하지 못함'))
+        : ($json.error && ($json.error.message || JSON.stringify($json.error))) || '약품 정보를 추출하지 못함'
     ).slice(0, 500)
   }) }}
   ```
   - 문자열을 직접 이어 붙이지 않고 `JSON.stringify`를 씁니다. 에러 메시지에 따옴표나 줄바꿈이 있어도 JSON이 깨지지 않습니다.
   - 에러 출력의 `error`는 노드에 따라 문자열이기도 하고 `message`를 가진 객체이기도 해서 둘 다 처리합니다.
     `약품 추출 확인`의 false 경로처럼 `error`가 없으면 기본 문구를 보냅니다.
+  - `??`와 `||`를 한 식에 섞지 마세요. n8n이 표현식을 변환하면서 괄호를 없애 `invalid syntax` 오류가 납니다(n8n 2.39 확인).
   - `error`는 서버 로그에만 남고 사용자에게는 보이지 않습니다. 그래도 OCR 원문 같은 처방 내용은 넣지 마세요.
 - **Settings**
   - **Retry On Fail**: 켜기(Max Tries 3, Wait 5000ms)
