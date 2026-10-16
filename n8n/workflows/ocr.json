@@ -61,6 +61,7 @@
         "promptType": "define",
         "text": "={{ JSON.stringify($json) }}",
         "hasOutputParser": true,
+        "needsFallback": true,
         "messages": {
           "messageValues": [
             {
@@ -78,10 +79,10 @@
       ],
       "id": "692a433e-fe5d-4a11-b6ba-11adbec20a49",
       "name": "Basic LLM Chain",
-      "onError": "continueErrorOutput",
       "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 5000
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -91,11 +92,31 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
       "position": [
-        160,
+        32,
         48
       ],
       "id": "d960d66e-18f0-4c5c-819e-59815a95a9be",
       "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        48
+      ],
+      "id": "3e9d7b21-6c4a-4f58-9b02-8a1f5c7d3e64",
+      "name": "Google Gemini Chat Model (대체)",
       "credentials": {
         "googlePalmApi": {
           "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
@@ -541,6 +562,17 @@
             "node": "Spring Boot (실패)",
             "type": "main",
             "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model (대체)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 1
           }
         ]
       ]

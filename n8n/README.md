@@ -49,8 +49,15 @@ n8n이 멈추거나 재시작되는 등 콜백 자체를 보내지 못하는 경
 - **Settings → On Error**를 `Continue (using error output)`로 설정합니다.
 - 노드에 error 출력이 하나 더 생깁니다. 세 노드의 에러 출력을 모두 4번의 `Spring Boot (실패)` 노드로 모읍니다.
 
-`Basic LLM Chain`은 **Settings → Retry On Fail**도 켭니다(Max Tries 3, Wait 5000ms).
-LLM API는 일시적인 과부하(503)가 잦아서, 모두 실패했을 때만 에러 출력으로 보냅니다.
+`Basic LLM Chain`은 LLM API의 일시적인 과부하(503)에 대비해 두 가지를 켭니다.
+
+- **Settings → Retry On Fail**: Max Tries 5, Wait 5000ms.
+  n8n은 Max Tries를 최대 5, Wait를 최대 5000ms로 제한하므로 더 큰 값을 넣어도 적용되지 않습니다.
+- **Enable Fallback Model**: 주 모델(`gemini-3.5-flash-lite`)이 실패하면 같은 시도 안에서
+  대체 모델(`Google Gemini Chat Model (대체)`, `gemini-3.8-flash`)을 바로 호출합니다.
+  503은 특정 모델에 요청이 몰릴 때 나므로, 기다리는 것보다 다른 모델로 넘기는 편이 효과적입니다.
+
+두 모델이 5회 모두 실패했을 때만 에러 출력으로 보냅니다.
 재시도 중에는 같은 OCR 결과로 LLM만 다시 호출하므로 Upstage 비용은 늘지 않습니다.
 `Upstage OCR`은 잘못된 이미지(422)처럼 다시 보내도 같은 결과가 나오는 실패가 대부분이라 재시도하지 않습니다.
 
