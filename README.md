@@ -49,11 +49,11 @@
 ## Nginx 무중단(블루-그린) 배포 구조
 
 1. Jenkins 파이프라인이 Spring Boot 신규 컨테이너(`yak-allim-backend-blue` 또는 `yak-allim-backend-green`)를 생성 및 헬스 체크 진행.
-2. 헬스 체크 성공 시 `./nginx/conf.d/service-url.inc` 및 배포 공유 디렉터리의 `service-url.inc`에 대상 서비스 URL 업데이트:
+2. 헬스 체크 성공 시 `./nginx/conf.d/service-url.inc`에 대상 서비스 URL 업데이트:
    `set $service_url http://yak-allim-backend-blue:8081;`
 3. Jenkins가 `docker exec yak-allim-nginx nginx -s reload` 명령을 실행하여 다운타임 없이 Nginx 라우팅 전환 완료.
 
-> `nginx/conf.d/service-url.inc`는 배포마다 덮어써지는 런타임 상태 파일이라 git에서 추적하지 않습니다(`.gitignore` 참고). `scripts/init-volumes.sh`가 최초 실행 시 `nginx/conf.d/service-url.inc.example`과 동일한 내용으로 생성합니다.
+> `nginx/conf.d/service-url.inc`는 배포마다 덮어써지는 런타임 상태 파일이라 git에서 추적하지 않습니다(`.gitignore` 참고). `scripts/init-nginx.sh`가 최초 실행 시 `nginx/conf.d/service-url.inc.example`과 동일한 내용으로 생성합니다.
 
 ## 구동 방법
 
@@ -63,12 +63,14 @@
 cp .env.example .env
 ```
 
-### 2. 초기 네트워크 및 볼륨 설정
+### 2. Nginx 라우팅 파일 초기화
 
 ```bash
-chmod +x scripts/init-volumes.sh
-./scripts/init-volumes.sh
+chmod +x scripts/init-nginx.sh
+./scripts/init-nginx.sh
 ```
+
+네트워크(`app-network`)와 볼륨(`jenkins_home`)은 `docker compose up`이 만듭니다.
 
 ### 3. 인프라 서비스 실행
 

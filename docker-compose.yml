@@ -12,14 +12,8 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d
-      - "${DEPLOY_DIR:-C:/yakallim-deploy}:/var/jenkins_home/deploy"
     networks:
       - app-network
-    depends_on:
-      jenkins:
-        condition: service_healthy
-      n8n:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost/health"]
       interval: 10s
@@ -29,7 +23,8 @@ services:
 
   # OCR 분석 및 작업 자동화 엔진
   n8n:
-    image: docker.n8n.io/n8nio/n8n:stable
+    # 버전이 바뀌면 워크플로우 노드 동작이 달라질 수 있어 고정한다. 올릴 때는 workflows/ocr.json을 다시 확인한다.
+    image: docker.n8n.io/n8nio/n8n:2.39.9
     container_name: yak-allim-n8n
     restart: always
     ports:
@@ -39,6 +34,8 @@ services:
       - N8N_PORT=5678
       - N8N_PROTOCOL=http
       - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678/}
+      - GENERIC_TIMEZONE=Asia/Seoul
+      - TZ=Asia/Seoul
     volumes:
       - "${N8N_DATA_PATH:-C:/n8n_data}:/home/node/.n8n"
     networks:
