@@ -96,6 +96,7 @@ docker compose ps
    | `Webhook` | Header Auth | 서버 → n8n 요청의 인바운드 인증. 값은 서버가 보내는 `X-N8N-WEBHOOK-SECRET` 헤더와 맞춰야 합니다 |
    | `Upstage OCR` | Bearer Auth | [Upstage Document AI](https://upstage.ai) API 키 |
    | `Google Gemini Chat Model` | Google Gemini(PaLM) API | Gemini API 키 |
+   | `Google Gemini Chat Model (대체)` | Google Gemini(PaLM) API | 위와 같은 자격 증명. 주 모델이 실패할 때 쓰는 대체 모델입니다 |
    | `Anthropic Chat Model` (비활성) | Anthropic API | 모델 교체 실험용으로 연결되어 있지 않아 필수는 아닙니다 |
    | `Append row in sheet` (비활성) | Google Sheets OAuth2 | 현재 비활성화 상태라 필수는 아닙니다. 사용하려면 본인 스프레드시트로 `documentId`/`sheetName`을 다시 지정해야 합니다 |
 
