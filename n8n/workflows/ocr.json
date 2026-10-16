@@ -19,7 +19,7 @@
       "typeVersion": 2.6,
       "position": [
         -528,
-        816
+        1024
       ],
       "id": "8801b663-506f-4b0d-a493-711f2fdc55ad",
       "name": "On form submission",
@@ -50,7 +50,7 @@
       "typeVersion": 3.4,
       "position": [
         -528,
-        592
+        800
       ],
       "id": "6f992889-a743-48e1-9cd0-74586e9601b6",
       "name": "Edit Fields",
@@ -77,18 +77,19 @@
         -192
       ],
       "id": "692a433e-fe5d-4a11-b6ba-11adbec20a49",
-      "name": "Basic LLM Chain"
+      "name": "Basic LLM Chain",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
-        "modelName": "models/gemini-3.1-flash-lite",
+        "modelName": "models/gemini-3.8-flash",
         "options": {}
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
       "position": [
         160,
-        32
+        48
       ],
       "id": "d960d66e-18f0-4c5c-819e-59815a95a9be",
       "name": "Google Gemini Chat Model",
@@ -108,7 +109,7 @@
       "typeVersion": 1.3,
       "position": [
         288,
-        32
+        48
       ],
       "id": "01b92d59-775d-4dad-9169-2bcaf503e949",
       "name": "Structured Output Parser"
@@ -186,7 +187,7 @@
       "typeVersion": 4.7,
       "position": [
         -528,
-        144
+        352
       ],
       "id": "ba46bcc6-6b7c-49c3-a939-ffdbdba3e955",
       "name": "Append row in sheet",
@@ -207,7 +208,7 @@
       "typeVersion": 1,
       "position": [
         -528,
-        368
+        576
       ],
       "id": "4e9d74be-fb34-4ff4-bae0-dbfaa02e7864",
       "name": "Split Out",
@@ -224,7 +225,8 @@
         -192
       ],
       "id": "05ab608d-a86b-4feb-a1f6-6c7097c8fb72",
-      "name": "Code in JavaScript"
+      "name": "Code in JavaScript",
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -289,7 +291,8 @@
           "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
           "name": "Bearer Auth account"
         }
-      }
+      },
+      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -312,11 +315,105 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        496,
-        -192
+        624,
+        -288
       ],
       "id": "4e5a52be-734f-4285-a957-92f362c8068c",
-      "name": "Spring Boot"
+      "name": "Spring Boot",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-5",
+          "cachedResultName": "Claude Sonnet 5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        -528,
+        144
+      ],
+      "id": "a1364e24-a5f4-462e-9252-cdbfda3622b8",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Anthropic account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4f0c1a52-8d7e-4b0a-9a51-2c3e6f1d9b77",
+              "leftValue": "={{ ($json.output?.prescriptions ?? []).length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        384,
+        -192
+      ],
+      "id": "0b7f3c9e-2a41-4d6b-8e15-7a9c4d2f6e31",
+      "name": "약품 추출 확인"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://yak-allim-nginx/api/v1/ocr/n8n/callback/{{ $('Webhook').first().json.query.jobId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-N8N-Secret",
+              "value": "REPLACE_WITH_OCR_N8N_WEBHOOK_SECRET"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\n  jobId: $('Webhook').first().json.query.jobId,\n  status: \"FAILED\",\n  error: String(\n    typeof $json.error === 'string'\n      ? $json.error\n      : ($json.error && ($json.error.message || JSON.stringify($json.error))) || '약품 정보를 추출하지 못함'\n  ).slice(0, 500)\n}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        624,
+        -64
+      ],
+      "id": "c5e2a8d4-7f13-4b9e-a6c0-3d81f5b2e947",
+      "name": "Spring Boot (실패)",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -328,17 +425,6 @@
     "Edit Fields": {
       "main": [
         []
-      ]
-    },
-    "Basic LLM Chain": {
-      "main": [
-        [
-          {
-            "node": "Spring Boot",
-            "type": "main",
-            "index": 0
-          }
-        ]
       ]
     },
     "Google Gemini Chat Model": {
@@ -363,6 +449,24 @@
         ]
       ]
     },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "약품 추출 확인",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spring Boot (실패)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Split Out": {
       "main": [
         []
@@ -373,6 +477,13 @@
         [
           {
             "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spring Boot (실패)",
             "type": "main",
             "index": 0
           }
@@ -395,6 +506,36 @@
         [
           {
             "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spring Boot (실패)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        []
+      ]
+    },
+    "약품 추출 확인": {
+      "main": [
+        [
+          {
+            "node": "Spring Boot",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spring Boot (실패)",
             "type": "main",
             "index": 0
           }

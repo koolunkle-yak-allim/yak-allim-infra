@@ -96,9 +96,10 @@ docker compose ps
    | `Webhook` | Header Auth | 서버 → n8n 요청의 인바운드 인증. 값은 서버가 보내는 `X-N8N-WEBHOOK-SECRET` 헤더와 맞춰야 합니다 |
    | `Upstage OCR` | Bearer Auth | [Upstage Document AI](https://upstage.ai) API 키 |
    | `Google Gemini Chat Model` | Google Gemini(PaLM) API | Gemini API 키 |
+   | `Anthropic Chat Model` (비활성) | Anthropic API | 모델 교체 실험용으로 연결되어 있지 않아 필수는 아닙니다 |
    | `Append row in sheet` (비활성) | Google Sheets OAuth2 | 현재 비활성화 상태라 필수는 아닙니다. 사용하려면 본인 스프레드시트로 `documentId`/`sheetName`을 다시 지정해야 합니다 |
 
-3. `Spring Boot` 노드(서버 콜백)의 `X-N8N-Secret` 헤더 값을 실제 비밀값으로 교체하고, 서버 쪽 `OCR_N8N_WEBHOOK_SECRET` 환경 변수와 동일한 값으로 맞춥니다. **`REPLACE_WITH_...`로 표시된 값이나 추측 가능한 문자열을 그대로 쓰지 마세요.**
+3. `Spring Boot`, `Spring Boot (실패)` 두 노드(서버 콜백)의 `X-N8N-Secret` 헤더 값을 실제 비밀값으로 교체하고, 서버 쪽 `OCR_N8N_WEBHOOK_SECRET` 환경 변수와 동일한 값으로 맞춥니다. **`REPLACE_WITH_...`로 표시된 값이나 추측 가능한 문자열을 그대로 쓰지 마세요.**
 4. `Webhook` 노드를 Production 모드로 활성화하면 `http://<n8n-host>:5678/webhook/ocr`로 요청을 받습니다. 이 URL을 서버의 `ocr.n8n.webhook-url`에 설정하세요.
 
 ### 워크플로우 개요
@@ -107,9 +108,11 @@ docker compose ps
 2. `Upstage OCR` — 이미지에서 텍스트와 좌표를 추출
 3. `Code in JavaScript` — OCR 응답을 LLM 입력 형식으로 가공, 쿼리스트링의 `jobId` 추출
 4. `Basic LLM Chain`(Google Gemini) — 약품명·복용량·복용 횟수·기간을 구조화된 JSON으로 추출
-5. `Spring Boot` — 결과를 서버 콜백(`POST /api/v1/ocr/n8n/callback/{jobId}`)으로 전송
+5. `약품 추출 확인` — 약품이 하나 이상 추출됐는지 확인
+6. `Spring Boot` — 결과를 서버 콜백(`POST /api/v1/ocr/n8n/callback/{jobId}`)으로 전송
+7. `Spring Boot (실패)` — 2~4단계가 실패하거나 약품을 찾지 못하면 같은 콜백으로 `status: "FAILED"` 전송
 
-서버와의 콜백 설정, 실패 콜백·결과 검증 추가 방법은 [`n8n/README.md`](n8n/README.md)에 정리되어 있습니다.
+서버와의 콜백 설정, 실패 처리 방식은 [`n8n/README.md`](n8n/README.md)에 정리되어 있습니다.
 
 `On form submission`/`Edit Fields`/`Split Out`/`Append row in sheet` 노드는 초기 개발 단계에서 쓰던 흐름(수동 폼 업로드 + Google Sheets 기록)의 흔적으로, 현재는 비활성화되어 있습니다.
 
