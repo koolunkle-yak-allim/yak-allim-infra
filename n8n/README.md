@@ -62,11 +62,11 @@ LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. 
 
 ## 3. 성공 콜백 (`Spring Boot` 노드)
 
-- 본문의 `status`는 `"SUCCESS"`도 동작합니다. 서버는 `FAILED`가 아니면 성공으로 처리합니다.
-  다만 계약 문서와 맞추려면 `"COMPLETED"`로 바꾸는 것을 권장합니다.
+- 본문의 `status`는 계약 문서에 맞춰 `"COMPLETED"`를 보냅니다. 서버는 `FAILED`가 아니면 모두 성공으로 처리합니다.
 - `medicines` 항목은 `medicineName`, `dosagePerTake`, `dailyFrequency`, `durationDays` 네 필드만 씁니다.
-  서버는 더 이상 `bounds`를 사용하지 않습니다. 모르는 필드는 무시하므로 보내도 오류는 나지 않습니다.
-  그래도 `Structured Output Parser` 스키마에서 `bounds`를 빼면 LLM 응답이 짧아지고, 정확하지 않은 좌표를 만들어 내는 일도 없어집니다.
+  `Structured Output Parser` 스키마와 LLM 프롬프트에도 이 네 필드만 있습니다.
+  서버가 쓰지 않는 약품명 좌표(`bounds`)는 LLM 응답만 길게 하고 부정확한 값을 만들 수 있어 넣지 않습니다.
+  OCR 좌표(`words_with_coordinates`)는 표에서 약품명과 숫자의 행을 맞추는 데 쓰도록 LLM 입력에 남겨 둡니다.
 - **Settings → Retry On Fail**을 켭니다(Max Tries 3, Wait 5000ms). 서버가 블루-그린 전환 중이라 잠시 응답하지 못할 때를 대비합니다.
 
 ## 4. 실패 콜백 (`Spring Boot (실패)` 노드)
