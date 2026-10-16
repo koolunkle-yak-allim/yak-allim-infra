@@ -153,3 +153,19 @@ curl -X POST "$JENKINS_WEBHOOK_URL?token=..."  ────►  Jenkins (127.0.0
 ```
 
 > **GitHub 호스티드 러너는 `127.0.0.1`에만 열려 있는 로컬 Jenkins에 직접 접근할 수 없습니다.** 그래서 GitHub Actions 시크릿 `JENKINS_WEBHOOK_URL`에는 `http://localhost:9090/...`가 아니라, ngrok·Cloudflare Tunnel 같은 도구로 Jenkins를 외부에 터널링한 **공개 URL**을 넣어야 합니다. 임시 터널 URL은 재기동할 때마다 바뀔 수 있으므로, 가능하면 고정 도메인을 주는 터널(예: Cloudflare Tunnel의 named tunnel)을 쓰는 편이 안전합니다.
+
+### ngrok으로 webhook만 공개하기
+
+ngrok 무료 계정의 고정 dev 도메인(`*.ngrok-free.dev`)을 쓰면 재기동해도 주소가 바뀌지 않습니다.
+터널을 열면 Jenkins 전체가 인터넷에 노출되므로, [`ngrok/traffic-policy.yml`](ngrok/traffic-policy.yml)로
+배포 webhook만 통과시킵니다.
+
+```bash
+ngrok http --url=https://<dev 도메인> --traffic-policy-file=ngrok/traffic-policy.yml 127.0.0.1:9090
+```
+
+- `POST /generic-webhook-trigger/invoke?token=...`만 Jenkins로 전달하고, 나머지(로그인 화면, 대시보드, `/script` 등)는 ngrok이 `404`로 막습니다.
+- 시크릿 `JENKINS_WEBHOOK_URL`은 `https://<dev 도메인>/generic-webhook-trigger/invoke`로 설정합니다.
+- Jenkins 화면은 이 PC에서 `http://localhost:9090`으로 접속합니다.
+- 정책과 별개로 Jenkins의 익명 접근은 꺼 둡니다(**Manage Jenkins → Security → Authorization**에서 `Logged-in users can do anything`, `Allow anonymous read access` 해제).
+- 터널이 꺼져 있으면 CI의 Jenkins 트리거 단계가 실패하므로, `main`에 push하기 전에 터널이 켜져 있는지 확인합니다.

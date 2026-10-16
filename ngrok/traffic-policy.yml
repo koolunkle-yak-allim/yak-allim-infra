@@ -1,0 +1,14 @@
+# ngrok Traffic Policy: Jenkins 앞단 터널에서 배포 webhook만 외부에 공개한다.
+# GitHub Actions(ci-cd.yml)는 POST /generic-webhook-trigger/invoke?token=... 만 호출한다.
+# 나머지 요청(로그인 화면, 대시보드 등)은 Jenkins까지 가지 않고 ngrok에서 404로 끝난다.
+#
+# 실행:
+#   ngrok http --url=<고정 도메인> --traffic-policy-file=ngrok/traffic-policy.yml 127.0.0.1:9090
+on_http_request:
+  - name: allow-only-jenkins-webhook
+    expressions:
+      - "!(req.method == 'POST' && req.url.path == '/generic-webhook-trigger/invoke' && 'token' in req.url.query_params)"
+    actions:
+      - type: deny
+        config:
+          status_code: 404
