@@ -36,6 +36,10 @@ services:
       - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678/}
       - GENERIC_TIMEZONE=Asia/Seoul
       - TZ=Asia/Seoul
+      # 실행 기록에는 처방전 사진, OCR 원문, 서버가 보낸 secret 헤더가 남는다. 기본값(336시간)
+      # 대신 24시간만 보관하고, 1시간 버퍼 뒤 사진 파일(binaryData)과 함께 완전히 지운다.
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=${N8N_EXECUTIONS_MAX_AGE_HOURS:-24}
     volumes:
       - "${N8N_DATA_PATH:-C:/n8n_data}:/home/node/.n8n"
     networks:

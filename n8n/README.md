@@ -143,3 +143,22 @@ LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. 
 
 설정을 바꾼 뒤에는 워크플로우를 다시 export해 `workflows/ocr.json`을 갱신하세요.
 export한 파일에 secret 값이 들어 있지 않은지(`REPLACE_WITH_...`로 되돌렸는지)도 확인합니다.
+
+## 7. 실행 기록 보관
+
+서버는 n8n으로 보낸 직후 업로드 사진을 지우지만, n8n은 실행 기록과 함께 아래 내용을 보관합니다.
+
+- 업로드된 처방전 사진: `${N8N_DATA_PATH}/binaryData/`
+- OCR 원문과 LLM 추출 결과, 서버가 보낸 요청 헤더(`X-N8N-WEBHOOK-SECRET` 포함): `database.sqlite`
+
+n8n 기본값은 14일(336시간) 보관이라, `docker-compose.yml`에서 **24시간**으로 줄였습니다.
+
+| 환경 변수 | 값 | 의미 |
+| --- | --- | --- |
+| `EXECUTIONS_DATA_PRUNE` | `true` | 오래된 실행 기록을 자동으로 지움 (n8n 기본값과 같음, 명시만 함) |
+| `EXECUTIONS_DATA_MAX_AGE` | `24` | 보관 시간. `.env`의 `N8N_EXECUTIONS_MAX_AGE_HOURS`로 바꿀 수 있음 |
+
+- 기간이 지난 기록은 먼저 숨김 처리되고, 1시간 버퍼(`EXECUTIONS_DATA_HARD_DELETE_BUFFER` 기본값) 뒤 사진 파일과 함께 완전히 지워집니다.
+- 이 설정은 n8n 인스턴스 전체에 적용됩니다. 같은 n8n의 다른 워크플로우 기록도 24시간 뒤 지워집니다.
+- 결과가 이상할 때 원본 사진과 대조하려면 하루 안에 n8n 실행 화면에서 확인하세요.
+- 변경은 `docker compose up -d n8n`으로 컨테이너를 다시 만들어야 적용됩니다. 적용 직후 다음 정리 주기에 24시간이 지난 기존 기록도 지워집니다.
