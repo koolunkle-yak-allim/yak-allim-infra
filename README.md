@@ -103,7 +103,9 @@ docker compose ps
    | `Append row in sheet` (비활성) | Google Sheets OAuth2 | 현재 비활성화 상태라 필수는 아닙니다. 사용하려면 본인 스프레드시트로 `documentId`/`sheetName`을 다시 지정해야 합니다 |
 
 3. `Spring Boot`, `Spring Boot (실패)` 두 노드(서버 콜백)의 `X-N8N-Secret` 헤더 값을 실제 비밀값으로 교체하고, 서버 쪽 `OCR_N8N_WEBHOOK_SECRET` 환경 변수와 동일한 값으로 맞춥니다. **`REPLACE_WITH_...`로 표시된 값이나 추측 가능한 문자열을 그대로 쓰지 마세요.**
-4. `Webhook` 노드를 Production 모드로 활성화하면 `http://<n8n-host>:5678/webhook/ocr`로 요청을 받습니다. 이 URL을 서버의 `ocr.n8n.webhook-url`에 설정하세요.
+4. 워크플로우를 게시(**Publish**)하면 `http://<n8n-host>:5678/webhook/ocr`로 요청을 받습니다. 이 URL이 서버의 `ocr.n8n.webhook-url` 기본값입니다.
+   - n8n 2.x에서는 저장(Save)만 하면 편집본만 바뀌고, 실제로 실행되는 버전은 바뀌지 않습니다. 노드 설정이나 헤더 값을 바꾼 뒤에는 반드시 다시 Publish하세요.
+   - 자격 증명(Credentials)은 버전과 상관없이 저장 즉시 적용됩니다.
 
 ### 워크플로우 개요
 
@@ -153,6 +155,8 @@ curl -X POST "$JENKINS_WEBHOOK_URL?token=..."  ────►  Jenkins (127.0.0
                                                            ▼
                                                      블루-그린 컨테이너 전환 + Nginx reload
 ```
+
+`yak-allim-android`도 같은 방식으로 `main` push 후 GitHub Actions가 Jenkins 작업 `yak-allim-android-cd`를 호출해 debug APK를 빌드·보관합니다. Android 작업은 증분 빌드를 하므로, 패키지명처럼 Hilt 진입점이 바뀌는 변경 뒤에는 **Build with Parameters**에서 `CLEAN_BUILD`를 한 번 켜고 빌드하세요.
 
 > **GitHub 호스티드 러너는 `127.0.0.1`에만 열려 있는 로컬 Jenkins에 직접 접근할 수 없습니다.** 그래서 GitHub Actions 시크릿 `JENKINS_WEBHOOK_URL`에는 `http://localhost:9090/...`가 아니라, ngrok·Cloudflare Tunnel 같은 도구로 Jenkins를 외부에 터널링한 **공개 URL**을 넣어야 합니다. 임시 터널 URL은 재기동할 때마다 바뀔 수 있으므로, 가능하면 고정 도메인을 주는 터널(예: Cloudflare Tunnel의 named tunnel)을 쓰는 편이 안전합니다.
 

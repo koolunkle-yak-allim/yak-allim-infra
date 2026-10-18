@@ -139,9 +139,9 @@ LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. 
    n8n 실행 화면에서 `Spring Boot (실패)` 노드가 `200`을 받았는지 확인합니다.
 3. **빈 결과 확인**: 약 정보가 없는 사진을 올려 `약품 추출 확인` 노드가 실패 경로로 가는지 확인합니다.
 4. **주의**: `webhook-test` 주소는 n8n 편집기에서 "Listen for test event"를 누른 동안에만 동작합니다.
-   최종 확인은 워크플로우를 Active로 켠 상태에서 production 주소(`/webhook/ocr`)로 하세요.
+   최종 확인은 워크플로우를 게시(Publish)한 상태에서 production 주소(`/webhook/ocr`)로 하세요.
 
-설정을 바꾼 뒤에는 워크플로우를 다시 export해 `workflows/ocr.json`을 갱신하세요.
+설정을 바꾼 뒤에는 다시 **Publish**해야 실행 버전에 반영됩니다(저장만 하면 편집본만 바뀜). 그다음 워크플로우를 export해 `workflows/ocr.json`을 갱신하세요.
 export한 파일에 secret 값이 들어 있지 않은지(`REPLACE_WITH_...`로 되돌렸는지)도 확인합니다.
 
 ## 7. 실행 기록 보관
