@@ -111,11 +111,12 @@ docker compose ps
 
 1. `Webhook` — 서버가 처방전 이미지를 멀티파트로 전송
 2. `Upstage OCR` — 이미지에서 텍스트와 좌표를 추출
-3. `Code in JavaScript` — OCR 응답을 LLM 입력 형식으로 가공, 쿼리스트링의 `jobId` 추출
+3. `Code in JavaScript` — OCR 응답을 LLM 입력 형식으로 가공, 쿼리스트링의 `jobId` 추출, 표의 숫자를 좌표로 열에 맞춘 `table_rows` 생성
 4. `Basic LLM Chain`(Google Gemini) — 약품명·복용량·복용 횟수·기간을 구조화된 JSON으로 추출
-5. `약품 추출 확인` — 약품이 하나 이상 추출됐는지 확인
-6. `Spring Boot` — 결과를 서버 콜백(`POST /api/v1/ocr/n8n/callback/{jobId}`)으로 전송
-7. `Spring Boot (실패)` — 2~4단계가 실패하거나 약품을 찾지 못하면 같은 콜백으로 `status: "FAILED"` 전송
+5. `표 값 적용` — 표에 있는 약은 1회 양·횟수·일수를 `table_rows` 값으로 바꿈(빈 칸은 `null`)
+6. `약품 추출 확인` — 약품이 하나 이상 추출됐는지 확인
+7. `Spring Boot` — 결과를 서버 콜백(`POST /api/v1/ocr/n8n/callback/{jobId}`)으로 전송
+8. `Spring Boot (실패)` — 2~4단계가 실패하거나 약품을 찾지 못하면 같은 콜백으로 `status: "FAILED"` 전송
 
 서버와의 콜백 설정, 실패 처리 방식은 [`n8n/README.md`](n8n/README.md)에 정리되어 있습니다.
 
