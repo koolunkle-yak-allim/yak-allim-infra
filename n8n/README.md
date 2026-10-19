@@ -79,6 +79,9 @@ LLM이 에러 없이 끝나도 결과를 쓸 수 없는 경우가 있습니다. 
   `Structured Output Parser` 스키마와 LLM 프롬프트에도 이 네 필드만 있습니다.
   서버가 쓰지 않는 약품명 좌표(`bounds`)는 LLM 응답만 길게 하고 부정확한 값을 만들 수 있어 넣지 않습니다.
   OCR 좌표(`words_with_coordinates`)는 표에서 약품명과 숫자의 행을 맞추는 데 쓰도록 LLM 입력에 남겨 둡니다.
+- `dosagePerTake`, `dailyFrequency`, `durationDays`는 **사진에 숫자가 보일 때만** 채우고, 없으면 `null`입니다.
+  - 스키마는 세 필드를 `["string", "null"]`, `["integer", "null"]`로 두고, 프롬프트의 "값이 사진에 없을 때" 규칙으로 추측을 막습니다.
+  - 투약 정보 열이 사진에서 잘렸을 때 LLM이 "1정 · 1회 · 1일"처럼 흔한 값을 지어내던 문제가 있었습니다. 앱은 `null`을 "확인 필요"로 보여 주고 사용자가 직접 입력하게 합니다.
 - **Settings → Retry On Fail**을 켭니다(Max Tries 3, Wait 5000ms). 서버가 블루-그린 전환 중이라 잠시 응답하지 못할 때를 대비합니다.
 
 ## 4. 실패 콜백 (`Spring Boot (실패)` 노드)
