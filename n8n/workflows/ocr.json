@@ -87,7 +87,9 @@
     {
       "parameters": {
         "modelName": "models/gemini-3.5-flash-lite",
-        "options": {}
+        "options": {
+          "temperature": 0
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
@@ -107,7 +109,9 @@
     {
       "parameters": {
         "modelName": "models/gemini-3.8-flash",
-        "options": {}
+        "options": {
+          "temperature": 0
+        }
       },
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1.1,
