@@ -65,7 +65,7 @@
         "messages": {
           "messageValues": [
             {
-              "message": "=당신은 전문 의료 문서 파싱 AI입니다. 제공된 처방전/복약안내문의 OCR 데이터(텍스트 및 좌표 정보)를 분석하여 약품 정보를 정확하게 추출하는 것이 당신의 임무입니다.\n\n연결된 Output Parser의 형식 스키마(JSON Schema)를 엄격히 준수하여 답변을 생성하십시오.\n\n### 데이터 입력 구조:\n- extracted_text: 문서 전체의 텍스트 흐름입니다. 문맥과 처방 내용을 파악할 때 사용하세요.\n- words_with_coordinates: 문서에 포함된 단어(text)와 해당 단어의 사각형 꼭짓점 좌표 배열이 담긴 목록입니다. 표 구조에서 약품명과 숫자가 같은 행에 있는지 판단할 때 참고하세요.\n\n### 서식 분석 및 추출 규칙:\n텍스트 내에서 투약 정보가 기재된 방식을 파악하고, 아래 두 가지 스타일 중 해당하는 규칙을 적용하여 데이터를 추출하세요.\n\n[스타일 1: 서술형 문장 구조]\n- \"1정씩 3회 3일분\", \"1캡슐씩 2회 30일분\"처럼 문장으로 나열된 경우, 각 숫자를 직관적으로 추출합니다.\n\n[스타일 2: 표/그리드 구조]\n- 텍스트 상단에 \"투약량 횟수 일수\" 또는 \"1회 투약량\", \"하루 투약횟수\", \"총 투약일수\" 등의 헤더가 등장하고, 약품명 우측 혹은 아래쪽에 세 개의 숫자가 연속으로 정렬된 경우(예: \"1 6 3\" 또는 \"1 3 3\")입니다.\n- 이 경우 첫 번째 숫자는 투약량, 두 번째 숫자는 횟수, 세 번째 숫자는 일수입니다. \n\n### 필드별 작성 규격 및 매핑 아웃풋 구조:\n최종 아웃풋은 반드시 `prescriptions` 배열 구조여야 하며, 내부의 각 약품 오브젝트는 아래 필드명을 엄격히 따라야 합니다.\n\n1. medicineName: 정확한 약품명만 추출합니다. 약품명 뒤에 '정', '캡슐', '서방정' 및 용량(mg)이 붙어있다면 그것을 포함한 전체 이름을 기입하세요 (예: \"이모튼캡슐\", \"바이독시정\").\n2. dosagePerTake: 1회 투약량입니다. 사진에 적힌 숫자에 단위('정' 또는 '캡슐')를 붙여서 문자열로 만드세요. 단위는 약품명 끝자리로 판별합니다(약품명이 '정'으로 끝나면 '정', '캡슐'이면 '캡슐'). 숫자 자체는 반드시 사진에 적힌 값이어야 합니다 (예: 사진의 1 -> \"1정\").\n3. dailyFrequency: 하루 투약 횟수입니다. 텍스트에 기재된 값을 기반으로 정수(Integer)로만 변환하세요 (예: 6).\n4. durationDays: 총 투약 일수입니다. 정수(Integer)로만 변환하세요 (예: 30).\n\n### 값이 사진에 없을 때:\n- dosagePerTake, dailyFrequency, durationDays는 사진(extracted_text, words_with_coordinates)에 해당 숫자가 실제로 보일 때만 채우세요.\n- 숫자가 보이지 않거나, 잘렸거나, 어느 약의 값인지 확실하지 않으면 추측하지 말고 null로 두세요. \"1정\", \"1회\", \"1일\"처럼 흔한 값으로 채우지 마세요.\n- 약품명은 보이는데 투약 정보가 없으면, medicineName만 채우고 나머지 세 필드는 null로 반환하세요. 앱이 사용자에게 직접 확인하도록 안내합니다."
+              "message": "=당신은 전문 의료 문서 파싱 AI입니다. 제공된 처방전/복약안내문의 OCR 데이터(텍스트 및 좌표 정보)를 분석하여 약품 정보를 정확하게 추출하는 것이 당신의 임무입니다.\n\n연결된 Output Parser의 형식 스키마(JSON Schema)를 엄격히 준수하여 답변을 생성하십시오.\n\n### 데이터 입력 구조:\n- extracted_text: 문서 전체의 텍스트 흐름입니다. 문맥과 처방 내용을 파악할 때 사용하세요.\n- words_with_coordinates: 문서에 포함된 단어(text)와 해당 단어의 사각형 꼭짓점 좌표 배열이 담긴 목록입니다. 표 구조에서 약품명과 숫자가 같은 행에 있는지 판단할 때 참고하세요.\n- table_rows: 표 형식일 때 코드가 숫자를 헤더 열 위치에 맞춰 약품별로 묶은 결과입니다(name, dosage, frequency, days). null은 사진의 그 칸이 비어 있다는 뜻입니다. 표가 아니면 빈 목록입니다.\n\n### 서식 분석 및 추출 규칙:\n텍스트 내에서 투약 정보가 기재된 방식을 파악하고, 아래 두 가지 스타일 중 해당하는 규칙을 적용하여 데이터를 추출하세요.\n\n[스타일 1: 서술형 문장 구조]\n- \"1정씩 3회 3일분\", \"1캡슐씩 2회 30일분\"처럼 문장으로 나열된 경우, 각 숫자를 직관적으로 추출합니다.\n\n[스타일 2: 표/그리드 구조]\n- 텍스트 상단에 \"투약량 횟수 일수\" 또는 \"1회 투약량\", \"하루 투약횟수\", \"총 투약일수\" 등의 헤더가 있고, 약품명 오른쪽에 숫자가 열을 맞춰 적힌 경우입니다.\n- 숫자는 순서가 아니라 위치(열)로 판단하세요. 칸이 비어 있으면 그 줄의 숫자가 3개보다 적습니다. 남은 숫자를 앞에서부터 채우지 말고, 각 숫자가 어느 열 아래에 있는지 words_with_coordinates의 가로 좌표로 정하고, 숫자가 없는 열은 null로 두세요.\n- table_rows에 같은 약이 있으면 그 값을 그대로 쓰세요.\n\n### 필드별 작성 규격 및 매핑 아웃풋 구조:\n최종 아웃풋은 반드시 `prescriptions` 배열 구조여야 하며, 내부의 각 약품 오브젝트는 아래 필드명을 엄격히 따라야 합니다.\n\n1. medicineName: 정확한 약품명만 추출합니다. 약품명 뒤에 '정', '캡슐', '서방정' 및 용량(mg)이 붙어있다면 그것을 포함한 전체 이름을 기입하세요 (예: \"이모튼캡슐\", \"바이독시정\").\n2. dosagePerTake: 1회 투약량입니다. 사진에 적힌 숫자에 단위('정' 또는 '캡슐')를 붙여서 문자열로 만드세요. 단위는 약품명 끝자리로 판별합니다(약품명이 '정'으로 끝나면 '정', '캡슐'이면 '캡슐'). 숫자 자체는 반드시 사진에 적힌 값이어야 합니다 (예: 사진의 1 -> \"1정\").\n3. dailyFrequency: 하루 투약 횟수입니다. 텍스트에 기재된 값을 기반으로 정수(Integer)로만 변환하세요 (예: 6).\n4. durationDays: 총 투약 일수입니다. 정수(Integer)로만 변환하세요 (예: 30).\n\n### 값이 사진에 없을 때:\n- dosagePerTake, dailyFrequency, durationDays는 사진(extracted_text, words_with_coordinates)에 해당 숫자가 실제로 보일 때만 채우세요.\n- 숫자가 보이지 않거나, 잘렸거나, 어느 약의 값인지 확실하지 않으면 추측하지 말고 null로 두세요. \"1정\", \"1회\", \"1일\"처럼 흔한 값으로 채우지 마세요.\n- 약품명은 보이는데 투약 정보가 없으면, medicineName만 채우고 나머지 세 필드는 null로 반환하세요. 앱이 사용자에게 직접 확인하도록 안내합니다."
             }
           ]
         },
@@ -83,6 +83,19 @@
       "maxTries": 5,
       "waitBetweenTries": 5000,
       "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LLM이 표의 숫자를 순서대로 채우면 빈 칸에서 값이 밀린다.\n// 이름이 표의 한 행과 맞는 약은 좌표로 맞춘 표 값(빈 칸은 null)으로 덮어쓴다.\nfunction normalizeName(name) {\n  return String(name || '').replace(/[\\s·…]|\\.{2,}/g, '').toLowerCase();\n}\n\nfunction sameMedicine(a, b) {\n  const x = normalizeName(a), y = normalizeName(b);\n  if (!x || !y) return false;\n  return x === y || (Math.min(x.length, y.length) >= 3 && (x.startsWith(y) || y.startsWith(x)));\n}\n\nfunction unitOf(dosagePerTake, medicineName) {\n  const unit = String(dosagePerTake || '').replace(/[\\d./½\\s]/g, '');\n  if (unit) return unit;\n  if (/캡슐/.test(medicineName)) return '캡슐';\n  if (/과립|산|시럽|현탁/.test(medicineName)) return '포';\n  return '정';\n}\n\nfunction toInteger(value) {\n  if (value === null || value === undefined) return null;\n  const n = Number(value);\n  return Number.isInteger(n) && n > 0 ? n : null;\n}\n\n/** 이름이 표의 한 행과 맞는 약은 세 값을 표 값으로 바꾼다. 표에서 비어 있던 칸은 null로 둔다. */\nfunction applyTableRows(prescriptions, rows) {\n  if (!Array.isArray(prescriptions) || !rows?.length) return prescriptions;\n  const used = new Set();\n  const numberIn = text => (String(text ?? '').match(/\\d+(?:\\.\\d+)?/) || [null])[0];\n  // 같은 이름이 여러 행에 있으면(본표와 영수증 목록 등) LLM 값과 가장 많이 일치하는 행을 고른다.\n  const agreement = (p, row) =>\n    (numberIn(p.dosagePerTake) === row.dosage ? 1 : 0) +\n    (String(p.dailyFrequency ?? '') === String(row.frequency ?? '') ? 1 : 0) +\n    (String(p.durationDays ?? '') === String(row.days ?? '') ? 1 : 0);\n  return prescriptions.map(p => {\n    let index = -1;\n    rows.forEach((row, i) => {\n      if (used.has(i) || !sameMedicine(p.medicineName, row.name)) return;\n      if (index < 0 || agreement(p, row) > agreement(p, rows[index])) index = i;\n    });\n    if (index < 0) return p;\n    used.add(index);\n    const row = rows[index];\n    return {\n      ...p,\n      dosagePerTake: row.dosage === null ? null : `${row.dosage}${unitOf(p.dosagePerTake, p.medicineName)}`,\n      dailyFrequency: toInteger(row.frequency),\n      durationDays: toInteger(row.days),\n    };\n  });\n}\n\nconst rows = $('Code in JavaScript').first().json.table_rows || [];\nreturn $input.all().map(item => {\n  const output = item.json.output || {};\n  try {\n    return { json: { ...item.json, output: { ...output, prescriptions: applyTableRows(output.prescriptions || [], rows) } } };\n  } catch (e) {\n    // 적용에 실패하면 LLM 결과를 그대로 넘긴다.\n    return item;\n  }\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -192
+      ],
+      "id": "8948e8c4-81d2-4c57-8540-ec0c36d0783c",
+      "name": "표 값 적용"
     },
     {
       "parameters": {
@@ -244,7 +257,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const ocrResponse = $input.all()[0].json;\nconst firstPage = ocrResponse.pages?.[0] || {};\nconst pageWords = firstPage.words || [];\n\nconst formattedWords = pageWords.map(word => {\n  return {\n    text: word.text,\n    coordinates: word.boundingBox?.vertices || []\n  };\n});\n\nlet jobId = \"JOB_ID_NOT_FOUND\";\n\ntry {\n  const webhookData = $('Webhook').item.json;\n  jobId = webhookData.query?.jobId || \"JOB_ID_NOT_FOUND\";\n} catch (e) {\n  try {\n    const webhookAll = $('Webhook').all();\n    jobId = webhookAll[0]?.json?.query?.jobId || \"JOB_ID_NOT_FOUND\";\n  } catch (err) {\n    jobId = \"JOB_ID_NOT_FOUND\";\n  }\n}\n\nreturn [{\n  json: {\n    jobId: jobId,\n    extracted_text: firstPage.text || ocrResponse.text || \"\",\n    words_with_coordinates: formattedWords\n  }\n}];"
+        "jsCode": "// 표 형식 복약 안내서에서 숫자를 헤더 열 위치에 맞춰 약품별로 묶는다.\n// LLM이 \"한 줄의 숫자를 앞에서부터 순서대로\" 채우면 빈 칸이 있을 때 값이 한 칸씩 밀리기 때문에,\n// 열 배정은 좌표로 정하고 LLM에는 참고값으로 넘긴다.\n\nconst COLUMN_KEYWORDS = {\n  dosage: /투약량|투여량|복용량|1회량/,\n  frequency: /횟수/,\n  days: /일수/,\n};\nconst HEADER_PREFIX = /^(1회|1일|하루|총)$/;\nconst NUMBER_TOKEN = /^(\\d+(?:\\.\\d+)?|\\d+\\/\\d+|½)(정|캡슐|포|회|일|T|C)?$/;\n\nfunction box(word) {\n  const xs = (word.boundingBox?.vertices || []).map(v => v.x ?? 0);\n  const ys = (word.boundingBox?.vertices || []).map(v => v.y ?? 0);\n  const x1 = Math.min(...xs), x2 = Math.max(...xs), y1 = Math.min(...ys), y2 = Math.max(...ys);\n  return { text: String(word.text || '').trim(), x1, x2, y1, y2, cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, h: y2 - y1 };\n}\n\nfunction median(values) {\n  const sorted = [...values].sort((a, b) => a - b);\n  return sorted.length ? sorted[Math.floor(sorted.length / 2)] : 0;\n}\n\nfunction toNumberText(text) {\n  const match = text.match(NUMBER_TOKEN);\n  if (!match) return null;\n  const raw = match[1];\n  if (raw === '½') return '0.5';\n  if (raw.includes('/')) {\n    const [a, b] = raw.split('/').map(Number);\n    return b ? String(Math.round((a / b) * 100) / 100) : null;\n  }\n  return raw;\n}\n\n/** 같은 줄에서 키워드 앞의 \"1회\", \"총\" 같은 접두어를 열 범위에 합친다. */\nfunction columnSpan(keywordWord, sameLine, lineHeight) {\n  let x1 = keywordWord.x1;\n  const prefix = sameLine\n    .filter(w => w.x2 <= keywordWord.x1 && keywordWord.x1 - w.x2 < lineHeight * 1.2 && HEADER_PREFIX.test(w.text))\n    .sort((a, b) => b.x2 - a.x2)[0];\n  if (prefix) x1 = prefix.x1;\n  return { x1, x2: keywordWord.x2, cx: (x1 + keywordWord.x2) / 2, y: keywordWord.cy };\n}\n\n/** 투약량·횟수·일수 세 열이 왼쪽부터 순서대로 있는 헤더를 모두 찾는다. */\nfunction findHeaders(words, lineHeight) {\n  const headers = [];\n  const dosageWords = words.filter(w => COLUMN_KEYWORDS.dosage.test(w.text));\n  for (const dosage of dosageWords) {\n    const sameLine = words.filter(w => Math.abs(w.cy - dosage.cy) < lineHeight * 0.8);\n    const frequency = sameLine\n      .filter(w => w !== dosage && COLUMN_KEYWORDS.frequency.test(w.text) && w.x1 > dosage.x2)\n      .sort((a, b) => a.x1 - b.x1)[0];\n    if (!frequency) continue;\n    const days = sameLine\n      .filter(w => w !== frequency && COLUMN_KEYWORDS.days.test(w.text) && w.x1 > frequency.x2)\n      .sort((a, b) => a.x1 - b.x1)[0];\n    if (!days) continue;\n    // 한 단어에 세 키워드가 다 들어 있는 \"복약안내(투약량/횟수/일수)\" 같은 제목은 열이 아니다.\n    if (dosage === frequency || frequency === days) continue;\n    const nameHeader = sameLine\n      .filter(w => /약품명|약명|품명/.test(w.text) && w.x2 < dosage.x1)\n      .sort((a, b) => b.x2 - a.x2)[0];\n    headers.push({\n      y: dosage.cy,\n      y2: Math.max(dosage.y2, frequency.y2, days.y2),\n      name: nameHeader ? { x1: nameHeader.x1, x2: nameHeader.x2 } : null,\n      columns: {\n        dosage: columnSpan(dosage, sameLine, lineHeight),\n        frequency: columnSpan(frequency, sameLine, lineHeight),\n        days: columnSpan(days, sameLine, lineHeight),\n      },\n    });\n  }\n  return headers.sort((a, b) => a.y - b.y);\n}\n\nconst COLUMN_KEYS = ['dosage', 'frequency', 'days'];\n\n/** 숫자의 가로 중심을 가장 가까운 열 중심에 배정한다. */\nfunction nearestColumn(cx, centers) {\n  return COLUMN_KEYS.reduce((best, key) =>\n    Math.abs(cx - centers[key]) < Math.abs(cx - centers[best]) ? key : best, COLUMN_KEYS[0]);\n}\n\n/** 세로 위치가 가까운 숫자끼리 한 행으로 묶는다. */\nfunction groupByLine(numbers, lineHeight) {\n  const groups = [];\n  for (const number of [...numbers].sort((a, b) => a.cy - b.cy)) {\n    const group = groups.find(g => Math.abs(g.cy - number.cy) < lineHeight * 0.6);\n    if (group) {\n      group.items.push(number);\n      group.cy = group.items.reduce((sum, n) => sum + n.cy, 0) / group.items.length;\n    } else {\n      groups.push({ cy: number.cy, items: [number] });\n    }\n  }\n  groups.forEach(g => g.items.sort((a, b) => a.cx - b.cx));\n  return groups;\n}\n\nfunction isNameWord(word) {\n  return toNumberText(word.text) === null && /^[가-힣A-Za-z]/.test(word.text) && !/[\\[\\]()]/.test(word.text);\n}\n\nfunction extractTableRows(page) {\n  const words = (page?.words || []).map(box).filter(w => w.text);\n  if (!words.length) return [];\n  const lineHeight = median(words.map(w => w.h)) || 20;\n  const pageWidth = page.width || Math.max(...words.map(w => w.x2));\n  const headers = findHeaders(words, lineHeight);\n  const rows = [];\n\n  headers.forEach((header, index) => {\n    const tableLeft = (header.name?.x1 ?? header.columns.dosage.x1 - pageWidth * 0.4) - lineHeight * 6;\n    // 오른쪽에 다른 표가 있으면 그 표의 시작 전까지만 이 표로 본다.\n    const neighbor = headers\n      .filter(h => h !== header && (h.name?.x1 ?? h.columns.dosage.x1) > header.columns.days.x2)\n      .map(h => (h.name?.x1 ?? h.columns.dosage.x1) - lineHeight * 6)\n      .sort((a, b) => a - b)[0];\n    const tableRight = neighbor ?? pageWidth;\n    const next = headers.slice(index + 1)\n      .find(h => h.columns.dosage.x1 < tableRight && h.columns.days.x2 > tableLeft);\n    const bottom = next ? next.y - lineHeight * 0.5 : Infinity;\n    const nameRight = header.name ? header.name.x2 + lineHeight * 2 : header.columns.dosage.x1;\n\n    const numbers = words\n      .filter(w => w.cy > header.y2 + lineHeight * 0.3 && w.cy < bottom && w.x1 > nameRight && w.x2 <= tableRight)\n      .map(w => ({ ...w, value: toNumberText(w.text) }))\n      .filter(w => w.value !== null);\n    const groups = groupByLine(numbers, lineHeight).filter(g => g.items.length <= 3);\n\n    // 세 칸이 모두 찬 행은 순서가 곧 열이다. 이 행들로 실제 숫자 열의 위치를 구한다.\n    // 헤더 글자는 가운데 정렬 등으로 숫자 열과 어긋날 수 있어, 모두 찬 행이 없을 때만 헤더 위치를 쓴다.\n    const complete = groups.filter(g => g.items.length === 3);\n    const centers = {};\n    COLUMN_KEYS.forEach((key, i) => {\n      centers[key] = complete.length ? median(complete.map(g => g.items[i].cx)) : header.columns[key].cx;\n    });\n\n    const inTable = words.filter(w =>\n      w.cy > header.y2 && w.cy < bottom && w.x1 >= tableLeft && w.x2 < centers.dosage && isNameWord(w));\n    // 약품명은 약품명 열 안에서 시작한다. 그 오른쪽의 복약 안내 문구는 이름이 아니다.\n    const nameColumnRight = header.name\n      ? header.name.x2\n      : Math.min(...inTable.map(w => w.x1)) + lineHeight * 3;\n    const nameCandidates = inTable.filter(w => w.x1 <= nameColumnRight);\n    // 같은 열에서도 약품명은 한 왼쪽 선에 맞춰 적혀 있다.\n    const nameX = Math.min(...nameCandidates.map(w => w.x1));\n\n    const columnGap = Math.min(centers.frequency - centers.dosage, centers.days - centers.frequency);\n    const numberAreaLeft = centers.dosage - columnGap / 2;\n    const numberAreaRight = centers.days + columnGap / 2;\n\n    for (const group of groups) {\n      // 숫자 열 안에 \"이하\" 같은 글자가 함께 있으면 표의 행이 아니다(예: \"이하 5정\" 생략 표시).\n      const mixedText = words.some(w =>\n        Math.abs(w.cy - group.cy) < lineHeight * 0.6 && w.cx > numberAreaLeft && w.cx < numberAreaRight &&\n        toNumberText(w.text) === null);\n      if (mixedText) continue;\n      const cells = { dosage: null, frequency: null, days: null };\n      if (group.items.length === 3) {\n        COLUMN_KEYS.forEach((key, i) => { cells[key] = group.items[i].value; });\n      } else {\n        const keys = group.items.map(n => nearestColumn(n.cx, centers));\n        if (new Set(keys).size !== keys.length) continue; // 두 숫자가 같은 열로 가면 판단하지 않는다\n        group.items.forEach((n, i) => { cells[keys[i]] = n.value; });\n      }\n      const name = nameCandidates\n        .filter(w => Math.abs(w.cy - group.cy) < lineHeight * 1.5 && Math.abs(w.x1 - nameX) < lineHeight * 2)\n        .sort((a, b) => Math.abs(a.cy - group.cy) - Math.abs(b.cy - group.cy))[0];\n      if (!name) continue;\n      rows.push({ name: name.text, ...cells });\n    }\n  });\n  return rows;\n}\n\nconst ocrResponse = $input.all()[0].json;\nconst firstPage = ocrResponse.pages?.[0] || {};\nconst pageWords = firstPage.words || [];\n\nconst formattedWords = pageWords.map(word => {\n  return {\n    text: word.text,\n    coordinates: word.boundingBox?.vertices || []\n  };\n});\n\nlet jobId = \"JOB_ID_NOT_FOUND\";\n\ntry {\n  const webhookData = $('Webhook').item.json;\n  jobId = webhookData.query?.jobId || \"JOB_ID_NOT_FOUND\";\n} catch (e) {\n  try {\n    const webhookAll = $('Webhook').all();\n    jobId = webhookAll[0]?.json?.query?.jobId || \"JOB_ID_NOT_FOUND\";\n  } catch (err) {\n    jobId = \"JOB_ID_NOT_FOUND\";\n  }\n}\n\n// 표의 숫자를 좌표로 열에 맞춘 결과. 실패해도 OCR 결과만으로 LLM이 처리하도록 빈 목록을 넘긴다.\nlet tableRows = [];\ntry {\n  tableRows = extractTableRows(firstPage);\n} catch (e) {\n  tableRows = [];\n}\n\nreturn [{\n  json: {\n    jobId: jobId,\n    extracted_text: firstPage.text || ocrResponse.text || \"\",\n    words_with_coordinates: formattedWords,\n    table_rows: tableRows\n  }\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -343,7 +356,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
+        848,
         -288
       ],
       "id": "4e5a52be-734f-4285-a957-92f362c8068c",
@@ -406,7 +419,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        384,
+        608,
         -192
       ],
       "id": "0b7f3c9e-2a41-4d6b-8e15-7a9c4d2f6e31",
@@ -433,7 +446,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        624,
+        848,
         -64
       ],
       "id": "c5e2a8d4-7f13-4b9e-a6c0-3d81f5b2e947",
@@ -481,7 +494,7 @@
       "main": [
         [
           {
-            "node": "약품 추출 확인",
+            "node": "표 값 적용",
             "type": "main",
             "index": 0
           }
@@ -577,6 +590,17 @@
             "node": "Basic LLM Chain",
             "type": "ai_languageModel",
             "index": 1
+          }
+        ]
+      ]
+    },
+    "표 값 적용": {
+      "main": [
+        [
+          {
+            "node": "약품 추출 확인",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
