@@ -16,13 +16,15 @@ jobs:
           cp .env.example .env
           docker compose config -q
 
+      # 운영과 같은 이미지로 검사하도록 docker-compose.yml에 고정한 nginx 이미지를 그대로 쓴다.
       - name: nginx 설정 검증
         run: |
           cp nginx/conf.d/service-url.inc.example nginx/conf.d/service-url.inc
+          NGINX_IMAGE=$(docker compose config --images | grep '^nginx:')
           docker run --rm \
             -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
             -v "$PWD/nginx/conf.d:/etc/nginx/conf.d:ro" \
-            nginx:stable-alpine nginx -t
+            "$NGINX_IMAGE" nginx -t
 
       - name: 스크립트 검증
         run: shellcheck scripts/*.sh
