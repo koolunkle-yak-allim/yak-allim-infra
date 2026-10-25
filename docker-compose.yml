@@ -3,7 +3,7 @@ name: yak-allim-infra
 services:
   # Nginx 리버스 프록시 및 무중단(블루-그린) 라우팅 컨트롤러
   nginx:
-    image: nginx:stable-alpine
+    image: nginx:1.30.6-alpine3.24
     container_name: yak-allim-nginx
     restart: always
     ports:
