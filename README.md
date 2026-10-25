@@ -2,7 +2,7 @@
 
 > **복약 안내서 OCR 분석 기반 복약 관리 솔루션**
 
-**Yak-Allim-Infra**는 Yak-Allim 서비스를 위한 공용 인프라(Nginx, Jenkins, n8n) 관리 저장소입니다.
+**Yak-Allim-Infra**는 Yak-Allim 서비스를 위한 공용 인프라(Nginx, Jenkins, n8n, Redis) 관리 저장소입니다.
 
 ---
 
@@ -14,6 +14,10 @@
   * Dynamic Docker Agent 방식을 활용하여 백엔드(Spring Boot) 및 클라이언트(Android APK) 파이프라인 제어
 * **n8n (Workflow Automation)**: `http://localhost:5678`
   * OCR 및 자동화 워크플로우 엔진
+* **Redis (OCR 작업 상태 저장소)**: `yak-allim-redis:6379`, `app-network` 안에서만 접근
+  * 서버를 다시 배포하거나 블루-그린으로 전환해도 진행 중인 작업과 결과가 남도록 서버 컨테이너 밖에 둠
+  * 디스크에 쓰지 않음(`--save ""`, `--appendonly no`): 작업은 최대 1시간만 보관하는 임시 데이터이고 복약 결과가 담기기 때문. Redis를 다시 시작하면 작업은 사라짐
+  * 메모리 한도 64MB, 가득 차면 지우지 않고 쓰기를 거부(`noeviction`)
 
 ### 포트
 
@@ -22,6 +26,7 @@
 | Nginx | 80 | `0.0.0.0:80` | 공개 (유일한 정식 진입점) |
 | n8n | 5678 | `127.0.0.1:5678` | 로컬 전용 |
 | Jenkins | 9090 | `127.0.0.1:9090` | 로컬 전용 |
+| Redis | 6379 | 열지 않음 | `app-network` 안의 서버 컨테이너만 접근 |
 | Spring Boot (blue) | 8082 → 컨테이너 8081 | `0.0.0.0:8082` | `yak-allim-server`의 `scripts/deploy.sh`가 블루-그린 전환 시 직접 관리 (이 저장소가 아닌 서버 저장소 범위) |
 | Spring Boot (green) | 8083 → 컨테이너 8081 | `0.0.0.0:8083` | 위와 동일 |
 
@@ -38,6 +43,7 @@
              (Spring Boot, :8082)      (Spring Boot, :8083)
                      │                     │
                      └──────────┬──────────┘
+                                ├──────────► yak-allim-redis (작업 상태, 포트 미공개)
                                 ▼
                       yak-allim-n8n (:5678, 로컬 전용)
                                 │
@@ -82,6 +88,7 @@ chmod +x scripts/init-nginx.sh
 ```
 
 네트워크(`app-network`)와 볼륨(`jenkins_home`)은 `docker compose up`이 만듭니다.
+서버(`yak-allim-server`)는 작업 상태를 Redis에 두므로, 서버를 배포하기 전에 Redis가 떠 있어야 합니다.
 
 ### 3. 인프라 서비스 실행
 
