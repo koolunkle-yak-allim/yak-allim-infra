@@ -194,3 +194,41 @@ ngrok http --url=https://<dev 도메인> --traffic-policy-file=ngrok/traffic-pol
 - Jenkins 화면은 이 PC에서 `http://localhost:9090`으로 접속합니다.
 - 정책과 별개로 Jenkins의 익명 접근은 꺼 둡니다(**Manage Jenkins → Security → Authorization**에서 `Logged-in users can do anything`, `Allow anonymous read access` 해제).
 - 터널이 꺼져 있으면 CI의 Jenkins 트리거 단계가 실패하므로, `main`에 push하기 전에 터널이 켜져 있는지 확인합니다.
+
+#### 터널 열기
+
+정책 파일 경로가 상대 경로이므로 **이 저장소 루트에서** 실행합니다. 다른 폴더에서 실행하면 `open ...\ngrok\traffic-policy.yml: The system cannot find the path specified`로 실패합니다.
+
+```bash
+cd yak-allim-infra
+ngrok http --url=https://<dev 도메인> --traffic-policy-file=ngrok/traffic-policy.yml 127.0.0.1:9090
+```
+
+`<dev 도메인>`에는 ngrok 대시보드 **Domains**에 보이는 전체 주소(`xxxx-xxxx-xxxx.ngrok-free.dev`)를 넣습니다. `ngrok-free.dev`만 넣으면 새 서브도메인을 만들려는 것으로 처리되어 `ERR_NGROK_313`(유료 플랜 필요)으로 실패합니다.
+터널은 이 창이 열려 있는 동안만 유지됩니다. PC를 다시 켜거나 창을 닫으면 다시 열어야 합니다.
+
+#### 머지 전 확인
+
+```bash
+# Git Bash
+curl -s https://<dev 도메인>/ | grep -o 'ERR_NGROK_[0-9]*' || echo "터널 켜짐"
+```
+
+```powershell
+# PowerShell (curl은 Invoke-WebRequest 별칭이라 curl.exe를 씀)
+$b = curl.exe -s https://<dev 도메인>/; if ($b -match 'ERR_NGROK_\d+') { $Matches[0] } else { '터널 켜짐' }
+```
+
+- 아무 오류 코드 없이 `터널 켜짐`이 나오면 정상입니다. 루트 경로는 정책이 `404`로 막으므로 응답 본문이 비어 있습니다.
+- `ERR_NGROK_3200`이 나오면 터널이 꺼져 있으니 위 명령으로 엽니다.
+
+#### 트리거가 실패했을 때
+
+| 증상(GitHub Actions `trigger-jenkins` 로그) | 원인 | 조치 |
+| --- | --- | --- |
+| `404` + `ERR_NGROK_3200` | 터널이 꺼져 있음 | 터널을 연 뒤 실패한 단계만 다시 실행: `gh run rerun <run-id> --failed -R <저장소>` |
+| `404` + 오류 코드 없음 | 정책이 막음(경로·메서드·`token` 누락) | 시크릿 `JENKINS_WEBHOOK_URL`이 `https://<dev 도메인>/generic-webhook-trigger/invoke`인지 확인 |
+| 터널을 열 때 `ERR_NGROK_313` | `--url`에 전체 도메인이 아님 | 대시보드 **Domains**의 전체 주소를 넣음 |
+
+`gh run rerun`은 같은 커밋으로 webhook만 다시 보냅니다. `<run-id>`는 실패한 실행의 주소(`.../actions/runs/<run-id>`)나 `gh run list -b main`에서 확인합니다.
+다시 실행하지 않고 Jenkins 화면(`http://localhost:9090`)에서 해당 작업을 **Build with Parameters**로 직접 실행해도 `main` 최신 커밋을 빌드합니다.
