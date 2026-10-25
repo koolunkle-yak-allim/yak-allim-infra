@@ -44,7 +44,18 @@
                       yak-allim-jenkins (:9090, 로컬 전용)
 ```
 
-> **보안 주의**: 이 구성은 로컬 개발·개인 포트폴리오 시연용입니다. TLS가 설정되어 있지 않고(443 비활성), Jenkins 컨테이너가 `root` 권한으로 `docker.sock`에 접근합니다(사실상 호스트 전체 제어 권한). 그대로 실제 운영 환경에 노출하지 말고, 최소한 TLS 적용과 Jenkins 권한 축소(예: `docker-socket-proxy`로 필요한 API만 개방)를 먼저 적용하세요.
+> **보안 주의**: 이 구성은 로컬 개발·개인 포트폴리오 시연용입니다. TLS가 설정되어 있지 않고(443 비활성), Jenkins 컨테이너가 `root` 권한으로 `docker.sock`에 접근합니다(사실상 호스트 전체 제어 권한). 그대로 실제 운영 환경에 노출하지 마세요.
+
+### Jenkins의 Docker 권한
+
+Jenkins 권한은 줄이지 않고, 대신 Jenkins에 닿는 길을 막아 둡니다.
+
+- **줄이지 않는 이유**: 배포 파이프라인이 이미지 빌드, 컨테이너 생성·시작·중지·삭제, `docker cp`, nginx 컨테이너 안의 `docker exec`, `--volumes-from`으로 Jenkins 볼륨을 나눠 쓰는 빌드 컨테이너 실행을 모두 씁니다. `docker-socket-proxy`로 API를 나눠 열어도 이 기능에 필요한 컨테이너·exec·build·볼륨 API를 열어야 하고, 그러면 `--privileged`나 `-v /:/host` 컨테이너를 만들 수 있어 호스트 root와 다르지 않습니다. Jenkins를 비root 사용자로 돌려도 소켓에 접근하는 한 결과는 같습니다.
+- **대신 둔 방어**:
+  - Jenkins는 `127.0.0.1:9090`에만 열려 있습니다.
+  - 외부에서는 ngrok Traffic Policy로 배포 webhook(`POST /generic-webhook-trigger/invoke`)만 들어옵니다. 로그인 화면·대시보드·`/script`는 404입니다([아래](#ngrok으로-webhook만-공개하기)).
+  - webhook은 토큰이 맞아야 실행되고, main 브랜치에 머지된 코드만 빌드합니다.
+- **실제 운영으로 옮길 때**: 빌드는 CI(GitHub Actions)에서 하고 이미지를 레지스트리에 올린 뒤, 운영 호스트에서는 이미지를 받아 교체만 하는 구조로 바꿉니다. 그러면 소켓을 가진 빌드 서버를 운영 호스트에 둘 필요가 없습니다.
 
 ## Nginx 무중단(블루-그린) 배포 구조
 
